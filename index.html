@@ -3,32 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>랜덤 아이템 뽑기</title>
+    <title>TRPG 도구 모음</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
         }
 
-        /* Custom Scrollbar for the list */
+        /* 탭 트랜지션 */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 펄스 애니메이션 (선택된 기술 강조) */
+        @keyframes glowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 15px 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        .skill-active {
+            border-color: #ef4444 !important; /* red-500 */
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            color: #f87171 !important; /* red-400 */
+            animation: glowPulse 1.5s infinite;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        /* 스크롤바 커스텀 */
         .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e293b; /* slate-800 */
+            background: #1e293b;
             border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569; /* slate-600 */
+            background: #475569;
             border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #64748b; /* slate-500 */
+            background: #64748b;
         }
 
-        /* Toast Animation */
+        /* 토스트 애니메이션 */
         @keyframes slideUpFade {
             0% { transform: translate(-50%, 20px); opacity: 0; }
             10% { transform: translate(-50%, 0); opacity: 1; }
@@ -41,142 +72,271 @@
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="text-slate-200 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
 
-    <main class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
+    <main class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden relative">
         
-        <!-- Header -->
-        <header class="bg-slate-800 p-6 border-b border-slate-700 text-center">
-            <h1 class="text-2xl font-bold text-emerald-400 drop-shadow-sm flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                아이템 추출기
-            </h1>
-            <p class="text-slate-400 text-sm mt-2">리스트에서 1~5개의 아이템을 랜덤으로 잃어버립니다.</p>
-        </header>
+        <!-- 장식용 상단 라인 -->
+        <div class="h-1.5 w-full bg-gradient-to-r from-red-600 via-purple-500 to-emerald-500"></div>
 
-        <!-- Content -->
-        <div class="p-6 space-y-6">
-            
-            <!-- Input Form -->
-            <form id="itemForm" class="flex gap-2">
-                <input 
-                    type="text" 
-                    id="itemInput" 
-                    placeholder="아이템 이름 입력..." 
-                    class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                    autocomplete="off"
-                >
-                <button 
-                    type="submit" 
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-                >
-                    추가
-                </button>
-            </form>
-
-            <!-- List Display -->
-            <div class="bg-slate-900 rounded-lg border border-slate-700 flex flex-col h-56">
-                <div class="p-3 border-b border-slate-800 flex justify-between items-center text-sm text-slate-400 font-medium">
-                    <span>인벤토리 아이템</span>
-                    <span id="itemCount">0 개</span>
-                </div>
-                <ul id="itemList" class="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-1">
-                    <!-- Items will be injected here -->
-                    <li id="emptyState" class="h-full flex items-center justify-center text-slate-500 text-sm">
-                        아이템을 추가해 주세요.
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Pick Action -->
+        <!-- 탭 네비게이션 -->
+        <nav class="flex border-b border-slate-700 bg-slate-800/80">
             <button 
-                id="pickBtn" 
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition-all transform active:scale-[0.98] focus:outline-none flex items-center justify-center gap-2"
+                onclick="switchTab('tab-enemy')" 
+                id="btn-tab-enemy"
+                class="flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-red-500 text-red-400 bg-slate-800/50"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                랜덤 아이템 뽑기
+                적 행동 추첨기
             </button>
+            <button 
+                onclick="switchTab('tab-item')" 
+                id="btn-tab-item"
+                class="flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/30"
+            >
+                유실 아이템 추첨기
+            </button>
+        </nav>
 
-            <!-- Result Box -->
-            <div id="resultContainer" class="hidden">
-                <p class="text-xs text-slate-400 mb-2 font-medium flex justify-between">
-                    결과 (클릭하여 복사)
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </p>
-                <div 
-                    id="resultBox" 
-                    class="w-full bg-slate-900 border-2 border-dashed border-emerald-500/50 hover:border-emerald-500 text-emerald-400 p-4 rounded-lg cursor-pointer transition-colors flex items-center justify-center text-center relative group"
-                    title="클릭하여 복사하기"
+        <div class="p-5 sm:p-6 min-h-[460px]">
+            
+            <div id="tab-enemy" class="tab-content active space-y-6">
+                <!-- 대상 수 입력 -->
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                    <label for="targetCount" class="block text-sm font-medium text-slate-400 mb-2">총 대상 수 (n명)</label>
+                    <div class="flex items-center gap-3">
+                        <input 
+                            type="number" 
+                            id="targetCount" 
+                            min="1" 
+                            value="4" 
+                            class="block w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all font-bold text-lg text-center"
+                            autocomplete="off"
+                        >
+                        <span class="text-slate-400 font-medium whitespace-nowrap">명 중 선택</span>
+                    </div>
+                </div>
+
+                <!-- 2x2 기술 그리드 -->
+                <div>
+                    <p class="text-sm font-medium text-slate-400 mb-2">보유 기술 목록</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div id="skill-1" class="skill-box bg-slate-800 border-2 border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-all duration-300">
+                            <span class="text-xs text-slate-500 mb-1 font-semibold tracking-wider">SKILL</span>
+                            <span class="text-2xl font-black text-slate-300">1</span>
+                        </div>
+                        <div id="skill-2" class="skill-box bg-slate-800 border-2 border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-all duration-300">
+                            <span class="text-xs text-slate-500 mb-1 font-semibold tracking-wider">SKILL</span>
+                            <span class="text-2xl font-black text-slate-300">2</span>
+                        </div>
+                        <div id="skill-3" class="skill-box bg-slate-800 border-2 border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-all duration-300">
+                            <span class="text-xs text-slate-500 mb-1 font-semibold tracking-wider">SKILL</span>
+                            <span class="text-2xl font-black text-slate-300">3</span>
+                        </div>
+                        <div id="skill-4" class="skill-box bg-slate-800 border-2 border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center transition-all duration-300">
+                            <span class="text-xs text-slate-500 mb-1 font-semibold tracking-wider">SKILL</span>
+                            <span class="text-2xl font-black text-slate-300">4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 추첨 버튼 -->
+                <button 
+                    id="drawEnemyBtn" 
+                    class="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-900/30 transition-all transform active:scale-[0.98] focus:outline-none flex items-center justify-center gap-2 text-base"
                 >
-                    <span id="resultText" class="font-medium select-none break-all">유실된 아이템 : </span>
-                    <!-- Hover overlay for better UX -->
-                    <div class="absolute inset-0 bg-emerald-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                    행동 및 대상 뽑기
+                </button>
+
+                <!-- 결과 표시 영역 -->
+                <div id="enemyResultContainer" class="hidden opacity-0 transition-opacity duration-300">
+                    <div class="bg-slate-900 border border-red-500/30 rounded-xl p-4 text-center">
+                        <p class="text-slate-400 text-xs font-medium mb-1">판정 결과</p>
+                        <p id="enemyResultText" class="text-lg font-bold text-white break-keep">
+                            <!-- 결과 텍스트 -->
+                        </p>
+                    </div>
                 </div>
             </div>
 
+            <div id="tab-item" class="tab-content space-y-5">
+                
+                <!-- 아이템 입력 폼 -->
+                <form id="itemForm" class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="itemInput" 
+                        placeholder="아이템 이름 입력..." 
+                        class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm"
+                        autocomplete="off"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-colors focus:outline-none"
+                    >
+                        추가
+                    </button>
+                </form>
+
+                <!-- 아이템 리스트 -->
+                <div class="bg-slate-900 rounded-lg border border-slate-700 flex flex-col h-48">
+                    <div class="px-3 py-2 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400 font-medium bg-slate-800/30">
+                        <span>현재 소지품</span>
+                        <span id="itemCount" class="text-emerald-400">0 개</span>
+                    </div>
+                    <ul id="itemList" class="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-1">
+                        <li id="emptyState" class="h-full flex items-center justify-center text-slate-500 text-sm">
+                            아이템을 추가해 주세요.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 뽑기 버튼 -->
+                <button 
+                    id="drawItemBtn" 
+                    class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-900/30 transition-all transform active:scale-[0.98] focus:outline-none flex items-center justify-center gap-2 text-base"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    유실 아이템 뽑기
+                </button>
+
+                <!-- 결과 표시 및 복사 영역 -->
+                <div id="itemResultContainer" class="hidden">
+                    <div 
+                        id="itemResultBox" 
+                        class="w-full bg-slate-900 border-2 border-dashed border-emerald-500/50 hover:border-emerald-400 text-emerald-400 p-4 rounded-xl cursor-pointer transition-colors flex flex-col items-center justify-center text-center group"
+                        title="클릭하여 복사하기"
+                    >
+                        <p class="text-xs text-slate-400 mb-1 group-hover:text-emerald-300 transition-colors flex items-center gap-1">
+                            클릭하여 복사
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </p>
+                        <span id="itemResultText" class="font-bold text-sm sm:text-base select-none break-all">유실된 아이템 : </span>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </main>
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"></div>
+    <!-- 공통 토스트 컨테이너 -->
+    <div id="toastContainer" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none flex flex-col gap-2 items-center w-max"></div>
 
     <script>
-        // State
-        let items = [];
+        /* --- 공통 기능: 토스트 메시지 --- */
+        const toastContainer = document.getElementById('toastContainer');
 
-        // DOM Elements
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            
+            let bgClass, icon;
+            if (type === 'success') {
+                bgClass = 'bg-emerald-600/95 border-emerald-500';
+                icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            } else {
+                bgClass = 'bg-red-600/95 border-red-500';
+                icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+            }
+            
+            toast.className = `${bgClass} text-white px-4 py-2.5 rounded-full shadow-lg font-medium text-sm flex items-center gap-2 toast-animate border backdrop-blur`;
+            toast.innerHTML = `${icon} ${message}`;
+            
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 3000);
+        }
+
+        /* --- 탭 전환 로직 --- */
+        function switchTab(tabId) {
+            // 모든 탭 내용 숨기기
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            // 선택한 탭 보이기
+            document.getElementById(tabId).classList.add('active');
+
+            // 버튼 스타일 초기화
+            const btnEnemy = document.getElementById('btn-tab-enemy');
+            const btnItem = document.getElementById('btn-tab-item');
+
+            if (tabId === 'tab-enemy') {
+                btnEnemy.className = "flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-red-500 text-red-400 bg-slate-800/50";
+                btnItem.className = "flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/30";
+            } else {
+                btnItem.className = "flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-emerald-500 text-emerald-400 bg-slate-800/50";
+                btnEnemy.className = "flex-1 py-4 text-sm font-bold text-center transition-colors border-b-2 border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/30";
+            }
+        }
+
+
+        /* --- 탭 1: 적 행동 추첨기 로직 --- */
+        const targetCountInput = document.getElementById('targetCount');
+        const drawEnemyBtn = document.getElementById('drawEnemyBtn');
+        const enemyResultContainer = document.getElementById('enemyResultContainer');
+        const enemyResultText = document.getElementById('enemyResultText');
+        const skillBoxes = [
+            document.getElementById('skill-1'),
+            document.getElementById('skill-2'),
+            document.getElementById('skill-3'),
+            document.getElementById('skill-4')
+        ];
+
+        drawEnemyBtn.addEventListener('click', () => {
+            const targetCount = parseInt(targetCountInput.value, 10);
+
+            if (isNaN(targetCount) || targetCount < 1) {
+                showToast('대상 수는 1명 이상이어야 합니다.', 'error');
+                targetCountInput.value = 1;
+                return;
+            }
+
+            const randomTarget = Math.floor(Math.random() * targetCount) + 1;
+            const randomSkill = Math.floor(Math.random() * 4) + 1;
+
+            // 스킬 하이라이트 초기화
+            skillBoxes.forEach(box => box.classList.remove('skill-active'));
+
+            enemyResultContainer.classList.add('hidden');
+            enemyResultContainer.classList.remove('opacity-100');
+            
+            // 시각적 딜레이를 주어 뽑는 느낌 강화
+            setTimeout(() => {
+                const activeBox = document.getElementById(`skill-${randomSkill}`);
+                if(activeBox) activeBox.classList.add('skill-active');
+
+                enemyResultText.innerHTML = `선택된 기술: <span class="text-rose-400 text-xl mx-1">기술 ${randomSkill}</span> <br class="sm:hidden" /> 대상: <span class="text-red-400 text-xl mx-1">${randomTarget}</span>번`;
+                
+                enemyResultContainer.classList.remove('hidden');
+                void enemyResultContainer.offsetWidth; // reflow
+                enemyResultContainer.classList.add('opacity-100');
+            }, 100);
+        });
+
+
+        /* --- 탭 2: 유실 아이템 추첨기 로직 --- */
+        let items = [];
         const itemForm = document.getElementById('itemForm');
         const itemInput = document.getElementById('itemInput');
         const itemList = document.getElementById('itemList');
         const itemCount = document.getElementById('itemCount');
         const emptyState = document.getElementById('emptyState');
-        const pickBtn = document.getElementById('pickBtn');
-        const resultContainer = document.getElementById('resultContainer');
-        const resultBox = document.getElementById('resultBox');
-        const resultText = document.getElementById('resultText');
-        const toastContainer = document.getElementById('toastContainer');
+        const drawItemBtn = document.getElementById('drawItemBtn');
+        const itemResultContainer = document.getElementById('itemResultContainer');
+        const itemResultBox = document.getElementById('itemResultBox');
+        const itemResultText = document.getElementById('itemResultText');
 
-        // Utility: Show Toast Notification (replaces alert)
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-600' : 'bg-red-500';
-            
-            toast.className = `${bgClass} text-white px-4 py-2 rounded-full shadow-lg font-medium text-sm flex items-center gap-2 toast-animate`;
-            
-            // Icon
-            const icon = type === 'success' 
-                ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-
-            toast.innerHTML = `${icon} ${message}`;
-            
-            toastContainer.appendChild(toast);
-
-            // Remove after animation finishes (3 seconds)
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 3000);
-        }
-
-        // Render List
         function updateListUI() {
-            // Update Count
             itemCount.textContent = `${items.length} 개`;
 
-            // Clear current list elements (keep empty state hidden initially)
-            const listNodes = Array.from(itemList.children);
-            listNodes.forEach(node => {
-                if (node.id !== 'emptyState') {
-                    node.remove();
-                }
+            Array.from(itemList.children).forEach(node => {
+                if (node.id !== 'emptyState') node.remove();
             });
 
             if (items.length === 0) {
                 emptyState.style.display = 'flex';
-                // Hide result if items become empty
-                resultContainer.classList.add('hidden');
+                itemResultContainer.classList.add('hidden');
                 return;
             }
 
@@ -184,7 +344,7 @@
 
             items.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.className = 'flex justify-between items-center p-2.5 bg-slate-800 rounded border border-slate-700 hover:border-slate-600 group transition-colors';
+                li.className = 'flex justify-between items-center px-3 py-2 bg-slate-800 rounded border border-slate-700 hover:border-slate-600 group';
                 
                 const span = document.createElement('span');
                 span.className = 'text-slate-300 text-sm break-all pr-2';
@@ -192,9 +352,7 @@
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'text-slate-500 hover:text-red-400 focus:outline-none p-1 rounded opacity-50 group-hover:opacity-100 transition-all';
-                deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-                
-                // Delete Event
+                deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
                 deleteBtn.onclick = () => {
                     items.splice(index, 1);
                     updateListUI();
@@ -204,83 +362,64 @@
                 li.appendChild(deleteBtn);
                 itemList.appendChild(li);
             });
-            
-            // Scroll to bottom when new item added
             itemList.scrollTop = itemList.scrollHeight;
         }
 
-        // Add Item Form Submit
         itemForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const val = itemInput.value.trim();
-            
             if (!val) {
                 showToast('아이템 이름을 입력해주세요.', 'error');
                 return;
             }
-
             items.push(val);
             itemInput.value = '';
             updateListUI();
         });
 
-        // Random Pick Logic
-        pickBtn.addEventListener('click', () => {
+        drawItemBtn.addEventListener('click', () => {
             if (items.length === 0) {
-                showToast('추출할 아이템이 없습니다. 리스트를 추가해주세요.', 'error');
+                showToast('추첨할 아이템이 리스트에 없습니다.', 'error');
                 return;
             }
 
-            // Determine N: Random number between 1 and min(items.length, 5)
-            const maxN = Math.min(items.length, 5);
-            const numToPick = Math.floor(Math.random() * maxN) + 1;
+            // k 구하기: 1 ~ min(5, 리스트 개수)
+            const maxK = Math.min(items.length, 5);
+            const k = Math.floor(Math.random() * maxK) + 1;
 
-            // Clone array and shuffle
+            // 배열 복사 후 셔플
             let shuffled = [...items];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
 
-            // Select top N items
-            const selectedItems = shuffled.slice(0, numToPick);
-
-            // Format result text string
-            const resultString = `유실된 아이템 : ${selectedItems.join(', ')}`;
-
-            // Update UI
-            resultText.textContent = resultString;
-            resultContainer.classList.remove('hidden');
+            const selectedItems = shuffled.slice(0, k);
+            itemResultText.textContent = `유실된 아이템 : ${selectedItems.join(', ')}`;
+            itemResultContainer.classList.remove('hidden');
         });
 
-        // Copy to Clipboard Logic
-        resultBox.addEventListener('click', () => {
-            const textToCopy = resultText.textContent;
+        // 복사 기능
+        itemResultBox.addEventListener('click', () => {
+            const textToCopy = itemResultText.textContent;
             
-            // Using execCommand for max compatibility within restricted iframe environments
             const textarea = document.createElement('textarea');
             textarea.value = textToCopy;
-            // Prevent scrolling to bottom of page in MS Edge.
             textarea.style.position = 'fixed';
-            textarea.style.top = '0';
-            textarea.style.left = '0';
             textarea.style.opacity = '0';
-            
             document.body.appendChild(textarea);
-            textarea.focus();
             textarea.select();
             
             try {
                 const successful = document.execCommand('copy');
                 if (successful) {
-                    showToast('복사되었습니다!');
+                    showToast('결과가 클립보드에 복사되었습니다!');
                 } else {
                     showToast('복사에 실패했습니다.', 'error');
                 }
             } catch (err) {
                 showToast('브라우저가 복사 기능을 지원하지 않습니다.', 'error');
             }
-            
             document.body.removeChild(textarea);
         });
 
