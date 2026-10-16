@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRPG 도구 모음</title>
+    <title>기술·아이템 뽑기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -166,7 +166,7 @@
                     <input 
                         type="text" 
                         id="itemInput" 
-                        placeholder="아이템 이름 입력..." 
+                        placeholder="아이템 이름 (콤마로 여러 개 입력 가능)"
                         class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm"
                         autocomplete="off"
                     >
@@ -367,14 +367,23 @@
 
         itemForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const val = itemInput.value.trim();
-            if (!val) {
+            // 콤마(반각/전각) 단위로 잘라서 공백 제거, 빈 항목은 무시
+            const newItems = itemInput.value
+                .split(/[,，]/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            if (newItems.length === 0) {
                 showToast('아이템 이름을 입력해주세요.', 'error');
                 return;
             }
-            items.push(val);
+            items.push(...newItems);
             itemInput.value = '';
             updateListUI();
+
+            if (newItems.length > 1) {
+                showToast(`${newItems.length}개 아이템이 추가되었습니다.`);
+            }
         });
 
         drawItemBtn.addEventListener('click', () => {
